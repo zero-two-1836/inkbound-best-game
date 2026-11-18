@@ -4,7 +4,33 @@
 // complete, game over, all clear) is painted here.
 
 import { FIELD, FONT, FONT_DISPLAY, PALETTE, PIP } from './config.js';
+import { createRandom } from './random.js';
 import { moverPosition } from './world.js';
+
+// The night sky is fixed, not random per run: the same seed always paints the
+// same stars and motes, so a staged screenshot is the same frame every time.
+const SKY_RANDOM = createRandom(20261118);
+const SKY_STARS = [];
+for (let i = 0; i < 90; i += 1) {
+  SKY_STARS.push({
+    x: 30 + SKY_RANDOM() * 1220,
+    y: 64 + SKY_RANDOM() * 480,
+    r: 0.8 + SKY_RANDOM() * 1.5,
+    a: 0.35 + SKY_RANDOM() * 0.55,
+    p: SKY_RANDOM() * Math.PI * 2,
+  });
+}
+const SKY_MOTES = [];
+for (let i = 0; i < 14; i += 1) {
+  SKY_MOTES.push({
+    x: 60 + SKY_RANDOM() * 1160,
+    y: 120 + SKY_RANDOM() * 480,
+    r: 2 + SKY_RANDOM() * 2.5,
+    c: ['#4de3ff', '#c86bff', '#ffd84d'][i % 3],
+    a: 0.1 + SKY_RANDOM() * 0.08,
+    p: SKY_RANDOM() * Math.PI * 2,
+  });
+}
 
 export const SCREEN_TITLE = 'title';
 export const SCREEN_SELECT = 'select';
@@ -58,6 +84,67 @@ export function createRenderer(canvas) {
     }
   }
 
+  function drawMoon() {
+    ctx.save();
+    ctx.shadowColor = 'rgba(242,237,224,0.55)';
+    ctx.shadowBlur = 46;
+    ctx.fillStyle = '#f2ede0';
+    ctx.beginPath();
+    ctx.arc(168, 118, 40, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(180,172,140,0.5)';
+    ctx.beginPath();
+    ctx.arc(154, 106, 8, 0, Math.PI * 2);
+    ctx.arc(182, 130, 6, 0, Math.PI * 2);
+    ctx.arc(172, 96, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawStarfield() {
+    for (const s of SKY_STARS) {
+      const tw = 0.75 + 0.25 * Math.sin(t * 2 + s.p);
+      ctx.globalAlpha = s.a * tw;
+      ctx.fillStyle = '#dfe6ff';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawDistantHills() {
+    const ridge = (base, h, a1, f1, p1, a2, f2, p2, color) => {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(0, FIELD.height);
+      for (let x = 0; x <= FIELD.width; x += 16) {
+        const y = base - (h + a1 * Math.sin(x * f1 + p1) + a2 * Math.sin(x * f2 + p2));
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(FIELD.width, FIELD.height);
+      ctx.closePath();
+      ctx.fill();
+    };
+    // Far ridge, lower and lighter; near ridge, taller and darker, in front.
+    ridge(700, 30, 18, 0.004, 1.7, 12, 0.011, 0.4, '#131838');
+    ridge(720, 55, 30, 0.006, 4.2, 20, 0.017, 2.0, '#0e1230');
+  }
+
+  function drawInkMotes() {
+    for (const m of SKY_MOTES) {
+      const dx = Math.sin(t * 0.15 + m.p) * 10;
+      const dy = Math.cos(t * 0.11 + m.p) * 8;
+      ctx.globalAlpha = m.a;
+      ctx.fillStyle = m.c;
+      ctx.beginPath();
+      ctx.arc(m.x + dx, m.y + dy, m.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
   function drawBackground(dt) {
     t += dt;
     const g = ctx.createLinearGradient(0, 0, 0, FIELD.height);
@@ -65,6 +152,9 @@ export function createRenderer(canvas) {
     g.addColorStop(1, PALETTE.paperDeep);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, FIELD.width, FIELD.height);
+    drawMoon();
+    drawStarfield();
+    drawDistantHills();
     // Soft nebula blobs, slowly drifting.
     const blobs = [
       [220, 150, 260, 'rgba(77,227,255,0.05)'],
@@ -85,6 +175,7 @@ export function createRenderer(canvas) {
         ctx.fillRect(x, y, 2, 2);
       }
     }
+    drawInkMotes();
   }
 
   function drawBlock(b) {
@@ -381,7 +472,7 @@ export function createRenderer(canvas) {
     text('Draw platforms · Collect 3 stars · Reach the flag', FIELD.width / 2, 420, 16, PALETTE.muted, 'center', 600, FONT);
     text('Mouse draw · Right-click erase · Space jump · A/D move · R restart · M mute', FIELD.width / 2, 500, 15, PALETTE.muted, 'center', 600, FONT);
     text(`Best score ${view.best}   ·   ${view.totalStars}/30 stars`, FIELD.width / 2, 540, 16, PALETTE.gold, 'center', 700, FONT);
-    text('10 hand-drawn levels · no two runs alike', FIELD.width / 2, 580, 15, PALETTE.muted, 'center', 600, FONT);
+    text('10 hand-drawn levels · springs, portals & moving ferries', FIELD.width / 2, 580, 15, PALETTE.muted, 'center', 600, FONT);
   }
 
   function drawSelect(world, view) {
