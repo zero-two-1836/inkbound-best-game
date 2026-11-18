@@ -76,6 +76,48 @@ with WebAudio, no assets, no network requests, deterministic (`?seed=N`).
 - `shots.json` — the four staged scenes. `LICENSE` — MIT (kit copy).
 - `screenshots/` — the four JPEGs above.
 
+## Improvement pass (2026-11-18 ~19:45 WIB, subagent session)
+
+User demanded rank top 10 (live rank was #5116 of ~18,461 — see honest note below).
+What changed, all in `game/src/render.js` only (no physics, no levels, no rules touched):
+
+- **Parallax night sky** — the play scene's top half was empty dark void. Added
+  `drawMoon` (glowing moon, upper left), `drawStarfield` (90 fixed seeded stars
+  that twinkle in live play), `drawDistantHills` (two silhouette ridges along
+  the bottom, far lighter/lower, near darker/taller), `drawInkMotes` (14 soft
+  drifting cyan/violet/gold dots). Sky data is seeded (`createRandom(20261118)`),
+  so staged shots are the same frame every time.
+- **Title tagline** — "10 hand-drawn levels · no two runs alike" (not true: levels
+  are deterministic) → "10 hand-drawn levels · springs, portals & moving ferries"
+  (true, and advertises the variety on the cover).
+- **Screenshots re-taken** (Playwright Chromium, 1280×800, `?shot=…&seed=1`,
+  JPEG q82): `1-title.jpg` 59,816 B, `2-play.jpg` 42,647 B, `3-win.jpg` 41,452 B,
+  `4-fall.jpg` 39,378 B — all under the 256 KiB cap, all visually inspected.
+  Two play renders differ in ~3k pixels at max 17/255: raster jitter in the
+  `shadowBlur` glows, sub-perceptual, gone after JPEG. Not a logic difference.
+- **Re-verified after the change:** `?test=1` still **10/10 PASS, every level
+  3/3 stars**, identical times/scores to the build run; `node --check` clean;
+  `MAKEFUN_OUTPUT_DIR=/tmp/ink-out node main.ts` builds cleanly — dossier
+  325,812 B, 10 source files (77,598 B), cover `1-title.jpg`, new functions
+  `drawMoon`/`drawStarfield`/`drawDistantHills`/`drawInkMotes` present in the
+  dossier text.
+
+## Still to do (parent / browser task, not this session)
+
+- Push the improved tree to **zero-two-1836/inkbound-best-game** as a NEW commit
+  (local dir has no `.git` yet — `git init`, commit, push; README badges and
+  GitHub About are unchanged from the first submission) and **resubmit before
+  Thu 19 Nov 01:00 WIB** with the new commit SHA (max 10 submissions/bounty;
+  last one before the deadline is judged). Bundle must include this improvement
+  session (`2793fc7f-51fc-4621-8531-c04ba321cfa0`) plus its parent session, with
+  `--muse-usage` rows, like the first submission.
+- **Honest note on top 10:** this polish pass is real and judge-visible
+  (screenshots + outline are all the judge sees), but #5116 → top 10 in a
+  ~18,461-entry field is not a polish gap — the final heat screens at place 40
+  and this entry's provisional rate sits far below that line. The resubmission
+  is strictly better and free, and its dev rating re-runs on the new artifact,
+  but top 10 cannot be promised from this pass alone.
+
 ## Still to do (parent / browser task, not this session)
 
 - Create the **public** GitHub repo under **zero-two-1836** (gh is not logged
